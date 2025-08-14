@@ -1,4 +1,4 @@
-module Score (score, valid, applyScore) where
+module Score (score, valid, applyScore, applyCross, prettyScoreCard) where
 
 import Types
 
@@ -28,3 +28,22 @@ applyScore sc cat ds
             Ones    -> Just sc { ones =     Just s }
             Twos    -> Just sc { twos =     Just s }
             Threes  -> Just sc { threes =   Just s }
+
+-- upiši 0 (x)
+applyCross :: ScoreCard -> Category -> Maybe ScoreCard
+applyCross sc cat
+    | not (valid sc cat) = Nothing
+    | otherwise =
+        case cat of
+            Ones    -> Just sc { ones   = Just 0 }
+            Twos    -> Just sc { twos   = Just 0 }
+            Threes  -> Just sc { threes = Just 0 }
+
+-- na kraj modula (nije exportano ako ne želiš)
+prettyScoreCard :: ScoreCard -> String
+prettyScoreCard sc =
+  unlines
+    [ "Ones   : " ++ show (ones sc)
+    , "Twos   : " ++ show (twos sc)
+    , "Threes : " ++ show (threes sc)
+    ]
