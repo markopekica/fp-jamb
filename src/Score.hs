@@ -49,8 +49,36 @@ setAt cs Down v = cs { cDown = Just v }
 setAt cs Up   v = cs { cUp   = Just v }
 setAt cs Free v = cs { cFree = Just v }
 
+-- indeks kategorije 0..5
+catIx :: Category -> Int
+catIx c = case c of
+  Ones   -> 0; Twos  -> 1; Threes -> 2
+  Fours  -> 3; Fives -> 4; Sixes  -> 5
+
+-- je li ćelija popunjena na točnoj lokaciji
+filledAt :: ScoreCard -> Category -> Column -> Bool
+filledAt sc cat col =
+  case col of
+    Down -> cDown (getCells sc cat) /= Nothing
+    Up   -> cUp   (getCells sc cat) /= Nothing
+    Free -> cFree (getCells sc cat) /= Nothing
+
+-- validacija s pravilima stupaca
 validAt :: ScoreCard -> Category -> Column -> Bool
-validAt sc cat col = getAt (getCells sc cat) col == Nothing
+validAt sc cat col =
+  let hereFree = getAt (getCells sc cat) col == Nothing
+  in case col of
+       Free -> hereFree
+       Down ->
+         -- za Down: sve prethodne kategorije moraju biti popunjene u Down
+         hereFree
+         && all (\c' -> filledAt sc c' Down) [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
+                                                  , catIx c' < catIx cat ]
+       Up   ->
+         -- za Up: sve kasnije kategorije moraju biti popunjene u Up
+         hereFree
+         && all (\c' -> filledAt sc c' Up)   [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
+                                                  , catIx c' > catIx cat ]
 
 applyScoreAt :: ScoreCard -> Category -> Column -> [Int] -> Maybe ScoreCard
 applyScoreAt sc cat col ds

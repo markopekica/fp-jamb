@@ -55,7 +55,7 @@ terminalStrategy st = do
 
   -- izbor
   putStrLn $ "\ESC[95mPreostalo bacanja: " ++ show (rollsLeft st) ++ "\ESC[0m"
-  putStrLn "\ESC[90mPotez? 1=Roll (samo prije prvog bacanja), r <indeksi 0..4>, 2=<cat> <col> (write), 3=<cat> <col> (cross)\ESC[0m"
+  putStrLn "\ESC[90mPotez? 1=Roll (samo prije prvog bacanja), r <indeksi 0..4 | all>, 2=<cat> <col> (write), 3=<cat> <col> (cross)\ESC[0m"
   ask sc
   where
     ask sc = do
@@ -75,12 +75,16 @@ terminalStrategy st = do
           if rollsLeft st <= 0
             then putStrLn "Nema preostalih bacanja. Odaberi 2=<cat> <col> (write) ili 3=<cat> <col> (cross)." >> ask sc
             else if null (dice st)
-                   then putStrLn "Nisi još bacio. Prvo 1=Roll." >> ask sc
-                   else
-                     let idxsRaw = parseIdxs (unwords rest)
-                         idxs    = filter (`elem` [0..4]) idxsRaw
-                     in if null idxs
-                          then putStrLn "Navedi indekse 0..4 (npr. r 0 1 4 ili r (0,2,4))." >> ask sc
+                  then putStrLn "Nisi još bacio. Prvo 1=Roll." >> ask sc
+                  else
+                    let n       = length (dice st)
+                        restSan = map sanitize rest
+                        idxsRaw = case restSan of
+                                    ["all"] -> [0..n-1]                         -- ⬅ podrži „r all”
+                                    _       -> parseIdxs (unwords rest)
+                        idxs    = filter (`elem` [0..n-1]) idxsRaw
+                    in if null idxs
+                          then putStrLn ("Navedi indekse 0.." ++ show (n-1) ++ " (npr. r 0 1 4, r (0,2,4) ili r all).") >> ask sc
                           else pure (Reroll idxs)
 
         -- 3) Write Score: 2 ones down  |  2 twos up  |  2 threes free
@@ -91,7 +95,7 @@ terminalStrategy st = do
                 then putStrLn "Nema kockica za upis (prvo roll/reroll)." >> ask sc
                 else if validAt sc c col
                        then pure (WriteScore c col)
-                       else putStrLn "To polje je već popunjeno." >> ask sc
+                       else putStrLn "Nedopušteno: polje zauzeto ili redoslijed stupca (down/up) ne dopušta ovaj red." >> ask sc
             _ -> putStrLn "Primjer: 2 ones down | 2 twos up | 2 threes free" >> ask sc
 
         ["2"] -> do
@@ -105,7 +109,7 @@ terminalStrategy st = do
                    then putStrLn "Nema kockica za upis." >> ask sc
                    else if validAt sc c col
                           then pure (WriteScore c col)
-                          else putStrLn "To polje je već popunjeno." >> ask sc
+                          else putStrLn "Nedopušteno: polje zauzeto ili redoslijed stupca (down/up) ne dopušta ovaj red." >> ask sc
             _ -> putStrLn "Primjer: ones down" >> ask sc
 
         -- 4) Cross: 3 ones up | 3 twos free
@@ -114,7 +118,7 @@ terminalStrategy st = do
             (Just c, Just col) ->
               if validAt sc c col
                 then pure (Cross c col)
-                else putStrLn "To polje je već popunjeno." >> ask sc
+                else putStrLn "Nedopušteno: polje zauzeto ili redoslijed stupca (down/up) ne dopušta ovaj red." >> ask sc
             _ -> putStrLn "Primjer: 3 ones up | 3 threes free" >> ask sc
 
         ["3"] -> do
@@ -126,7 +130,7 @@ terminalStrategy st = do
               , Just col <- parseCol colTxt
               -> if validAt sc c col
                    then pure (Cross c col)
-                   else putStrLn "To polje je već popunjeno." >> ask sc
+                   else putStrLn "Nedopušteno: polje zauzeto ili redoslijed stupca (down/up) ne dopušta ovaj red." >> ask sc
             _ -> putStrLn "Primjer: twos up" >> ask sc
 
         -- default
