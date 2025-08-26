@@ -23,6 +23,9 @@ parseCategory s = case sanitize s of
   "ones"   -> Just Ones
   "twos"   -> Just Twos
   "threes" -> Just Threes
+  "fours"  -> Just Fours
+  "fives"  -> Just Fives
+  "sixes"  -> Just Sixes
   _        -> Nothing
 
 parseCol :: String -> Maybe Column

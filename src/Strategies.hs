@@ -21,7 +21,7 @@ easyAI st
   | null (dice st) = pure Roll
   | otherwise =
       let sc       = scoreCards st !! activePlayerIndex st
-          cats     = [Ones, Twos, Threes]
+          cats = [Ones, Twos, Threes, Fours, Fives, Sixes]
           -- sve (cat,col) kombinacije koje su slobodne
           slots    = [ (c,col) | c <- cats, col <- cols, validAt sc c col ]
       in case slots of

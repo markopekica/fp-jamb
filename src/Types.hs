@@ -11,8 +11,8 @@ data Move
 -}
 
 
-data Category = Ones | Twos | Threes -- proširiti
-    deriving (Show, Eq)
+data Category = Ones | Twos | Threes | Fours | Fives | Sixes
+  deriving (Show, Eq)
 
 type Round = Int -- šta će mi ovo?
 
@@ -62,6 +62,9 @@ data ScoreCard = ScoreCard
   { ones   :: Cells
   , twos   :: Cells
   , threes :: Cells
+  , fours  :: Cells
+  , fives  :: Cells
+  , sixes  :: Cells
   } deriving (Show, Eq)
 
 -- potezi sada nose i stupac
@@ -76,4 +79,4 @@ emptyCells :: Cells
 emptyCells = Cells Nothing Nothing Nothing
 
 emptyCard :: ScoreCard
-emptyCard = ScoreCard emptyCells emptyCells emptyCells
+emptyCard = ScoreCard emptyCells emptyCells emptyCells emptyCells emptyCells emptyCells

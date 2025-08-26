@@ -15,18 +15,29 @@ score cat ds =
     Ones   -> sum [1 | d <- ds, d == 1]
     Twos   -> 2 * length [() | d <- ds, d == 2]
     Threes -> 3 * length [() | d <- ds, d == 3]
+    Fours  -> 4 * length [() | d <- ds, d == 4]
+    Fives  -> 5 * length [() | d <- ds, d == 5]
+    Sixes  -> 6 * length [() | d <- ds, d == 6]
 
 
 -- helperi za Cells
 getCells :: ScoreCard -> Category -> Cells
-getCells sc Ones   = ones sc
-getCells sc Twos   = twos sc
-getCells sc Threes = threes sc
+getCells sc c = case c of
+  Ones   -> ones sc
+  Twos   -> twos sc
+  Threes -> threes sc
+  Fours  -> fours sc
+  Fives  -> fives sc
+  Sixes  -> sixes sc
 
 setCells :: ScoreCard -> Category -> Cells -> ScoreCard
-setCells sc Ones   x = sc { ones   = x }
-setCells sc Twos   x = sc { twos   = x }
-setCells sc Threes x = sc { threes = x }
+setCells sc c x = case c of
+  Ones   -> sc { ones   = x }
+  Twos   -> sc { twos   = x }
+  Threes -> sc { threes = x }
+  Fours  -> sc { fours  = x }
+  Fives  -> sc { fives  = x }
+  Sixes  -> sc { sixes  = x }
 
 getAt :: Cells -> Column -> Maybe Int
 getAt cs Down = cDown cs
@@ -76,4 +87,7 @@ prettyTicket sc = unlines
   , rowLine "ones"   (ones sc)
   , rowLine "twos"   (twos sc)
   , rowLine "threes" (threes sc)
+  , rowLine "fours"  (fours sc)
+  , rowLine "fives"  (fives sc)
+  , rowLine "sixes"  (sixes sc)
   ]

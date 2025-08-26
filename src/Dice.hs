@@ -21,14 +21,14 @@ rerollAt ds idxs = do
     uniq = go []
       where
         go _ [] = []
-        go seen (x:xs) | x `elem` seen = go seen xs
-                       | otherwise     = x : go (x:seen) xs
+        go seen (x:xs)
+          | x `elem` seen = go seen xs
+          | otherwise     = x : go (x:seen) xs
 
     merge :: [Int] -> [Int] -> [Int] -> [Int]
-    merge xs is ns = [ pick i x | (i,x) <- zip [0..] xs ]
-      where
-        pick i x =
-          case pos i is of
-            Nothing -> x
-            Just k  -> ns !! k
-        pos i js = lookup i (zip js [0..])
+    merge xs is ns =
+      [ case lookup i (zip is ns) of
+          Just newVal -> newVal
+          Nothing     -> oldVal
+      | (i, oldVal) <- zip [0..] xs
+      ]
