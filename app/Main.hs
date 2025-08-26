@@ -21,10 +21,15 @@ loop st ps = do
     st' <- stepIO st mv
     -- putStrLn $ "\ESC[32mKockice: " ++ (if null (dice st') then "[]" else show (dice st')) ++ "\ESC[0m"
     case mv of
+        WriteScore cat col -> putStrLn $ "Upisano u "   ++ show cat ++ " / " ++ show col
+        Cross      cat col -> putStrLn $ "Prekriženo " ++ show cat ++ " / " ++ show col
+        _                  -> putStrLn $ "\ESC[32mKockice: " ++ (if null (dice st') then "[]" else show (dice st')) ++ "\ESC[0m"
+    {-
+    case mv of
         WriteScore cat -> putStrLn $ "Upisano u " ++ show cat
         Cross cat      -> putStrLn $ "Prekriženo " ++ show cat
         _              -> putStrLn $ "\ESC[32mKockice: " ++ (if null (dice st') then "[]" else show (dice st')) ++ "\ESC[0m"
-
+    -}
 
     -- putStrLn $ "Preostalo bacanja: " ++ show (rollsLeft st')
     if roundNum st' > 10

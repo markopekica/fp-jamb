@@ -1,7 +1,7 @@
 module Engine (initialState, advanceTurn, stepIO) where
 import Types
 import Dice (rollN, rerollAt)
-import Score (applyScore, applyCross)
+import Score (applyScoreAt, applyCrossAt)
 
 initialState :: Int -> GameState
 initialState n =
@@ -9,7 +9,8 @@ initialState n =
             , activePlayerIndex   = 0
             , totalPlayers    = n
             , dice       = []
-            , scoreCards = replicate n (ScoreCard Nothing Nothing Nothing)
+            --, scoreCards = replicate n (ScoreCard Nothing Nothing Nothing)
+            , scoreCards = replicate n emptyCard  -- vidi Types.hs gore
             , rollsLeft  = 3
             }
 
@@ -35,6 +36,17 @@ stepIO st mv = case mv of
         d' <- rerollAt (dice st) idxs
         pure st { dice = d', rollsLeft = rollsLeft st - 1 }
 
+  WriteScore cat col -> do
+    let ix  = activePlayerIndex st
+        scs = scoreCards st
+        me  = scs !! ix
+    case applyScoreAt me cat col (dice st) of
+        Nothing  -> pure st
+        Just me' ->
+            let st' = st { scoreCards = replace ix me' scs }
+            in pure (advanceTurn st')
+    
+{-
   WriteScore cat -> do
     let ix  = activePlayerIndex st
         scs = scoreCards st
@@ -44,12 +56,12 @@ stepIO st mv = case mv of
       Just me' ->
         let st' = st { scoreCards = replace ix me' scs }
         in pure (advanceTurn st')
-
-  Cross cat ->
+-}
+  Cross cat col ->
     let ix  = activePlayerIndex st
         scs = scoreCards st
         me  = scs !! ix
-    in case applyCross me cat of
+    in case applyCrossAt me cat col of
          Nothing  -> pure st
          Just me' ->
            let st' = st { scoreCards = replace ix me' scs }
