@@ -4,6 +4,10 @@ import Types
 import Engine
 import Terminal (human)
 import Strategies (easyAI)
+import Score (finalScore, gameFinished, prettyTicket)
+import qualified Data.Ord as Ord
+import Data.List (sortOn)
+
 
 main :: IO ()
 main = do
@@ -32,6 +36,33 @@ loop st ps = do
     -}
 
     -- putStrLn $ "Preostalo bacanja: " ++ show (rollsLeft st')
-    if roundNum st' > 10
-        then putStr "Kraj igre!"
+    if gameFinished st'
+        then endGame st' ps
         else loop st' ps
+    {--if gameFinished st'
+        
+        then do
+            putStrLn "\n=== KRAJ IGRE ==="
+            let cards   = scoreCards st'
+                scores  = map finalScore cards
+                pairs   = zip ps scores
+                ranked = sortOn (Ord.Down . snd) pairs
+            putStrLn "Poredak:"
+            mapM_ (\(i,(pl,sc)) ->
+                    putStrLn $ show i ++ ". " ++ playerName pl ++ " - " ++ show sc)
+                (zip [1..] ranked)
+        else loop st' ps
+        --}
+        -- ====== kraj igre ======
+
+
+endGame :: GameState -> [Player] -> IO ()
+endGame st ps = do
+    putStrLn "\n=== KRAJ IGRE ==="
+    putStrLn "Rezultati:"
+    let scs = scoreCards st
+    mapM_ (\(p,sc) -> do
+            putStrLn $ "\nIgrač: " ++ playerName p
+            putStrLn (prettyTicket sc)
+            putStrLn $ "Ukupno: " ++ show (finalScore sc)
+        ) (zip ps scs)

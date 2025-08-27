@@ -3,6 +3,9 @@ module Score
   , applyScoreAt, applyCrossAt
   , validAt
   , prettyTicket
+  , finalScore
+  , gameFinished
+  , columnTotal
   ) where
 
 
@@ -63,22 +66,22 @@ filledAt sc cat col =
     Up   -> cUp   (getCells sc cat) /= Nothing
     Free -> cFree (getCells sc cat) /= Nothing
 
--- validacija s pravilima stupaca
+-- pravila za dopušteni potez
 validAt :: ScoreCard -> Category -> Column -> Bool
 validAt sc cat col =
   let hereFree = getAt (getCells sc cat) col == Nothing
   in case col of
        Free -> hereFree
        Down ->
-         -- za Down: sve prethodne kategorije moraju biti popunjene u Down
-         hereFree
-         && all (\c' -> filledAt sc c' Down) [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
-                                                  , catIx c' < catIx cat ]
-       Up   ->
-         -- za Up: sve kasnije kategorije moraju biti popunjene u Up
-         hereFree
-         && all (\c' -> filledAt sc c' Up)   [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
-                                                  , catIx c' > catIx cat ]
+         hereFree &&
+         all (\c' -> filledAt sc c' Down)
+             [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
+                  , catIx c' < catIx cat ]
+       Up ->
+         hereFree &&
+         all (\c' -> filledAt sc c' Up)
+             [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
+                  , catIx c' > catIx cat ]
 
 applyScoreAt :: ScoreCard -> Category -> Column -> [Int] -> Maybe ScoreCard
 applyScoreAt sc cat col ds
@@ -119,3 +122,55 @@ prettyTicket sc = unlines
   , rowLine "fives"  (fives sc)
   , rowLine "sixes"  (sixes sc)
   ]
+
+
+
+
+-- Zbroji vrijednosti za kategorije 1–6 u danom stupcu
+upperSum :: ScoreCard -> Column -> Int
+upperSum sc col =
+  sum [ val
+      | cat <- [Ones, Twos, Threes, Fours, Fives, Sixes]
+      , Just val <- [lookupCell sc cat col]
+      ]
+
+-- Pomoćna: dohvat jedne ćelije (ako je upisana)
+lookupCell :: ScoreCard -> Category -> Column -> Maybe Int
+lookupCell sc cat col =
+  case cat of
+    Ones   -> pick (ones sc)
+    Twos   -> pick (twos sc)
+    Threes -> pick (threes sc)
+    Fours  -> pick (fours sc)
+    Fives  -> pick (fives sc)
+    Sixes  -> pick (sixes sc)
+  where
+    pick cs = case col of
+                Down -> cDown cs
+                Up   -> cUp cs
+                Free -> cFree cs
+
+-- Ukupan rezultat jednog stupca (gornji dio + bonus)
+columnTotal :: ScoreCard -> Column -> Int
+columnTotal sc col =
+  let subtotal = upperSum sc col
+  in if subtotal >= 60 then subtotal + 30 else subtotal
+
+-- Ukupan rezultat cijelog listića (sva 3 stupca)
+finalScore :: ScoreCard -> Int
+finalScore sc =
+  sum [ columnTotal sc Down
+      , columnTotal sc Up
+      , columnTotal sc Free ]
+
+
+-- Score.hs
+gameFinished :: GameState -> Bool
+gameFinished st =
+  all full (scoreCards st)
+  where
+    full sc = allCellsFilled [ones sc, twos sc, threes sc, fours sc, fives sc, sixes sc]
+
+allCellsFilled :: [Cells] -> Bool
+allCellsFilled csList =
+  all (\cs -> cDown cs /= Nothing && cUp cs /= Nothing && cFree cs /= Nothing) csList
