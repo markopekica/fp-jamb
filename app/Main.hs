@@ -3,7 +3,7 @@ module Main where
 import Types
 import Engine
 import Terminal (human)
-import Strategies (easyAI)
+import Strategies (randomAI, greedyAI)
 import Score (finalScore, gameFinished, prettyTicket)
 import qualified Data.Ord as Ord
 import Data.List (sortOn)
@@ -11,7 +11,11 @@ import Data.List (sortOn)
 
 main :: IO ()
 main = do
-    let players = [human, Player "AI" easyAI] -- redoslijed; tko prvi igra
+    --let players = [human, Player "AI" easyAI] -- redoslijed; tko prvi igra
+    --loop (initialState (length players)) players
+    let players = [ Player "Rand" randomAI
+                    , Player "Greedy" greedyAI
+                ]
     loop (initialState (length players)) players
 
 loop :: GameState -> [Player] -> IO ()
