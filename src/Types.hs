@@ -11,8 +11,10 @@ data Move
 -}
 
 
-data Category = Ones | Twos | Threes | Fours | Fives | Sixes
-  deriving (Show, Eq)
+data Category
+  = Ones | Twos | Threes | Fours | Fives | Sixes
+  | Max | Min | Straight | Full | Poker | Yamb
+  deriving (Eq, Show, Enum, Bounded)
 
 type Round = Int -- šta će mi ovo?
 
@@ -59,12 +61,8 @@ data Cells = Cells
 
 -- ScoreCard sada ima po jednu liniju (Cells) za svaku kategoriju
 data ScoreCard = ScoreCard
-  { ones   :: Cells
-  , twos   :: Cells
-  , threes :: Cells
-  , fours  :: Cells
-  , fives  :: Cells
-  , sixes  :: Cells
+  { ones, twos, threes, fours, fives, sixes :: Cells
+  , maxC, minC, straight, full, poker, yamb   :: Cells
   } deriving (Show, Eq)
 
 -- potezi sada nose i stupac
@@ -79,4 +77,7 @@ emptyCells :: Cells
 emptyCells = Cells Nothing Nothing Nothing
 
 emptyCard :: ScoreCard
-emptyCard = ScoreCard emptyCells emptyCells emptyCells emptyCells emptyCells emptyCells
+emptyCard = ScoreCard
+  emptyCells emptyCells emptyCells emptyCells emptyCells emptyCells
+  emptyCells emptyCells emptyCells emptyCells emptyCells emptyCells
+  

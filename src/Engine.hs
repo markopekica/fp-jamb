@@ -23,8 +23,14 @@ advanceTurn st =
 stepIO :: GameState -> Move -> IO GameState
 stepIO st mv = case mv of
   Roll
-    | rollsLeft st <= 0     -> pure st
-    | not (null (dice st))  -> pure st                      -- već bacio; koristi Reroll
+    -- ako već imamo kockice i još imamo bacanja -> reroll svih
+    | not (null (dice st)) && rollsLeft st > 0 -> do
+        let n = length (dice st)
+        d' <- rerollAt (dice st) [0..n-1]
+        pure st { dice = d', rollsLeft = rollsLeft st - 1 }
+    -- nema više bacanja -> ništa
+    | rollsLeft st <= 0 -> pure st
+    -- prvi roll (nema kockica)
     | otherwise -> do
         d <- rollN 5
         pure st { dice = d, rollsLeft = rollsLeft st - 1 }

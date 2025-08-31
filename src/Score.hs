@@ -8,7 +8,7 @@ module Score
   , columnTotal
   ) where
 
-
+import Data.List (sort, group)
 import Types
 
 -- koliko bodova donosi kategorija za dane kocke
@@ -21,6 +21,22 @@ score cat ds =
     Fours  -> 4 * length [() | d <- ds, d == 4]
     Fives  -> 5 * length [() | d <- ds, d == 5]
     Sixes  -> 6 * length [() | d <- ds, d == 6]
+    Max    -> sum ds
+    Min    -> sum ds
+    Straight ->
+      let s = sort ds
+      in if      s == [1,2,3,4,5] then 35
+         else if s == [2,3,4,5,6] then 45
+         else 0
+    Full   ->
+      let lens = sort (map length (group (sort ds)))
+      in if lens == [2,3] then 30 + sum ds else 0    -- promijeni na samo 30 ako želiš
+    Poker  ->
+      let mx = maximum (map length (group (sort ds)))
+      in if mx >= 4 then 40 + sum ds else 0
+    Yamb   ->
+      let mx = maximum (map length (group (sort ds)))
+      in if mx == 5 then 50 + sum ds else 0
 
 
 -- helperi za Cells
@@ -32,6 +48,12 @@ getCells sc c = case c of
   Fours  -> fours sc
   Fives  -> fives sc
   Sixes  -> sixes sc
+  Max    -> maxC sc
+  Min    -> minC sc
+  Straight -> straight sc
+  Full     -> full sc
+  Poker    -> poker sc
+  Yamb     -> yamb sc
 
 setCells :: ScoreCard -> Category -> Cells -> ScoreCard
 setCells sc c x = case c of
@@ -41,6 +63,12 @@ setCells sc c x = case c of
   Fours  -> sc { fours  = x }
   Fives  -> sc { fives  = x }
   Sixes  -> sc { sixes  = x }
+  Max    -> sc { maxC   = x }
+  Min    -> sc { minC   = x }
+  Straight -> sc { straight = x }
+  Full     -> sc { full     = x }
+  Poker    -> sc { poker    = x }
+  Yamb     -> sc { yamb     = x }
 
 getAt :: Cells -> Column -> Maybe Int
 getAt cs Down = cDown cs
@@ -52,11 +80,17 @@ setAt cs Down v = cs { cDown = Just v }
 setAt cs Up   v = cs { cUp   = Just v }
 setAt cs Free v = cs { cFree = Just v }
 
--- indeks kategorije 0..5
+-- fiksni poredak redaka u listiću (koristi se za Down/Up validaciju)
+catOrder :: [Category]
+catOrder =
+  [ Ones, Twos, Threes, Fours, Fives, Sixes
+  , Max, Min, Straight, Full, Poker, Yamb
+  ]
+
 catIx :: Category -> Int
-catIx c = case c of
-  Ones   -> 0; Twos  -> 1; Threes -> 2
-  Fours  -> 3; Fives -> 4; Sixes  -> 5
+catIx c = case lookup c (zip catOrder [0..]) of
+            Just i  -> i
+            Nothing -> error "Unknown category in catIx"
 
 -- je li ćelija popunjena na točnoj lokaciji
 filledAt :: ScoreCard -> Category -> Column -> Bool
@@ -75,13 +109,11 @@ validAt sc cat col =
        Down ->
          hereFree &&
          all (\c' -> filledAt sc c' Down)
-             [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
-                  , catIx c' < catIx cat ]
+             [ c' | c' <- catOrder, catIx c' < catIx cat ]
        Up ->
          hereFree &&
          all (\c' -> filledAt sc c' Up)
-             [ c' | c' <- [Ones, Twos, Threes, Fours, Fives, Sixes]
-                  , catIx c' > catIx cat ]
+             [ c' | c' <- catOrder, catIx c' > catIx cat ]
 
 applyScoreAt :: ScoreCard -> Category -> Column -> [Int] -> Maybe ScoreCard
 applyScoreAt sc cat col ds
@@ -115,12 +147,19 @@ rowLine label cs =
 prettyTicket :: ScoreCard -> String
 prettyTicket sc = unlines
   [ "              down  up  free"
-  , rowLine "ones"   (ones sc)
-  , rowLine "twos"   (twos sc)
-  , rowLine "threes" (threes sc)
-  , rowLine "fours"  (fours sc)
-  , rowLine "fives"  (fives sc)
-  , rowLine "sixes"  (sixes sc)
+  , rowLine "ones"     (ones sc)
+  , rowLine "twos"     (twos sc)
+  , rowLine "threes"   (threes sc)
+  , rowLine "fours"    (fours sc)
+  , rowLine "fives"    (fives sc)
+  , rowLine "sixes"    (sixes sc)
+  , ""
+  , rowLine "max"      (maxC sc)
+  , rowLine "min"      (minC sc)
+  , rowLine "straight" (straight sc)
+  , rowLine "full"     (full sc)
+  , rowLine "poker"    (poker sc)
+  , rowLine "yamb"     (yamb sc)
   ]
 
 
@@ -137,18 +176,23 @@ upperSum sc col =
 -- Pomoćna: dohvat jedne ćelije (ako je upisana)
 lookupCell :: ScoreCard -> Category -> Column -> Maybe Int
 lookupCell sc cat col =
-  case cat of
-    Ones   -> pick (ones sc)
-    Twos   -> pick (twos sc)
-    Threes -> pick (threes sc)
-    Fours  -> pick (fours sc)
-    Fives  -> pick (fives sc)
-    Sixes  -> pick (sixes sc)
-  where
-    pick cs = case col of
-                Down -> cDown cs
-                Up   -> cUp cs
-                Free -> cFree cs
+  let pick cs = case col of
+                  Down -> cDown cs
+                  Up   -> cUp cs
+                  Free -> cFree cs
+  in case cat of
+       Ones     -> pick (ones sc)
+       Twos     -> pick (twos sc)
+       Threes   -> pick (threes sc)
+       Fours    -> pick (fours sc)
+       Fives    -> pick (fives sc)
+       Sixes    -> pick (sixes sc)
+       Max      -> pick (maxC sc)
+       Min      -> pick (minC sc)
+       Straight -> pick (straight sc)
+       Full     -> pick (full sc)
+       Poker    -> pick (poker sc)
+       Yamb     -> pick (yamb sc)
 
 -- Ukupan rezultat jednog stupca (gornji dio + bonus)
 columnTotal :: ScoreCard -> Column -> Int
@@ -156,12 +200,14 @@ columnTotal sc col =
   let subtotal = upperSum sc col
   in if subtotal >= 60 then subtotal + 30 else subtotal
 
--- Ukupan rezultat cijelog listića (sva 3 stupca)
+-- Ukupni rezultat: po stupcima (upper+bonus) + (Max-Min)*Ones + (Straight+Full+Poker+Yamb)
 finalScore :: ScoreCard -> Int
 finalScore sc =
-  sum [ columnTotal sc Down
-      , columnTotal sc Up
-      , columnTotal sc Free ]
+  let cols = [Down, Up, Free]
+      perCol col = columnTotal sc col           -- upper + bonus
+                 + maxMinTerm sc col            -- (Max-Min)*Ones
+                 + lowerOthersSum sc col        -- Straight+Full+Poker+Yamb
+  in sum (map perCol cols)
 
 
 -- Score.hs
@@ -174,3 +220,25 @@ gameFinished st =
 allCellsFilled :: [Cells] -> Bool
 allCellsFilled csList =
   all (\cs -> cDown cs /= Nothing && cUp cs /= Nothing && cFree cs /= Nothing) csList
+
+
+-- Dohvati vrijednost ćelije ili 0 ako je prazna
+cellVal :: ScoreCard -> Category -> Column -> Int
+cellVal sc cat col = maybe 0 id (lookupCell sc cat col)
+
+-- (Max - Min) * Ones u danom stupcu
+maxMinTerm :: ScoreCard -> Column -> Int
+maxMinTerm sc col =
+  let maxV  = cellVal sc Max  col
+      minV  = cellVal sc Min  col
+      onesV = cellVal sc Ones col   -- broj jedinica u tom stupcu
+  in (maxV - minV) * onesV
+
+-- Zbroj donjeg “ostatka” (bez Max/Min): Straight+Full+Poker+Yamb
+lowerOthersSum :: ScoreCard -> Column -> Int
+lowerOthersSum sc col =
+  sum [ cellVal sc Straight col
+      , cellVal sc Full     col
+      , cellVal sc Poker    col
+      , cellVal sc Yamb     col
+      ]

@@ -3,19 +3,19 @@ module Main where
 import Types
 import Engine
 import Terminal (human)
-import Strategies (randomAI, greedyAI)
+import Strategies (randomAI, greedyAI)  -- koristi što želiš; human ostaje za ljudskog igrača
 import Score (finalScore, gameFinished, prettyTicket)
 import qualified Data.Ord as Ord
 import Data.List (sortOn)
-
+import Hints (printHints)
 
 main :: IO ()
 main = do
-    --let players = [human, Player "AI" easyAI] -- redoslijed; tko prvi igra
-    --loop (initialState (length players)) players
-    let players = [ Player "Rand" randomAI
-                    , Player "Greedy" greedyAI
-                ]
+    -- biraj sastav:  (1) čovjek vs AI     ili     (2) AI vs AI
+    -- let players = [human, Player "AI" greedyAI]
+    let players = [ Player "Rand"   randomAI
+                  , Player "Greedy" greedyAI
+                  ]
     loop (initialState (length players)) players
 
 loop :: GameState -> [Player] -> IO ()
@@ -23,43 +23,30 @@ loop st ps = do
     putStrLn "\n----------------------"
     let p = ps !! activePlayerIndex st
     putStrLn $ "Na potezu: " ++ playerName p
-    -- putStrLn $ "DBG (activeIx,totalPl): " ++ show (activePlayerIndex st, totalPlayers st)
-    mv <- playerStrategy p st
-    -- putStrLn $ "Odabran potez: " ++ show mv
+
+    mv  <- playerStrategy p st
     st' <- stepIO st mv
-    -- putStrLn $ "\ESC[32mKockice: " ++ (if null (dice st') then "[]" else show (dice st')) ++ "\ESC[0m"
+
+    putStrLn $ "AI potez: " ++ case mv of
+        Roll -> "Roll"
+        Reroll is -> "Reroll " ++ show is
+        WriteScore c col -> "Write " ++ show c ++ " / " ++ show col
+        Cross c col -> "Cross " ++ show c ++ " / " ++ show col
+
     case mv of
         WriteScore cat col -> putStrLn $ "Upisano u "   ++ show cat ++ " / " ++ show col
         Cross      cat col -> putStrLn $ "Prekriženo " ++ show cat ++ " / " ++ show col
-        _                  -> putStrLn $ "\ESC[32mKockice: " ++ (if null (dice st') then "[]" else show (dice st')) ++ "\ESC[0m"
-    {-
-    case mv of
-        WriteScore cat -> putStrLn $ "Upisano u " ++ show cat
-        Cross cat      -> putStrLn $ "Prekriženo " ++ show cat
-        _              -> putStrLn $ "\ESC[32mKockice: " ++ (if null (dice st') then "[]" else show (dice st')) ++ "\ESC[0m"
-    -}
+        _ -> do
+          putStrLn $ "Kockice: " ++ (if null (dice st') then "[]" else show (dice st'))
+          -- pokaži hintove nakon svakog bacanja / reroll-a
+          printHints st'
 
-    -- putStrLn $ "Preostalo bacanja: " ++ show (rollsLeft st')
-    if gameFinished st'
+    -- okini kraj samo na prijelazu u završeno stanje
+    if (not $ gameFinished st) && gameFinished st'
         then endGame st' ps
         else loop st' ps
-    {--if gameFinished st'
-        
-        then do
-            putStrLn "\n=== KRAJ IGRE ==="
-            let cards   = scoreCards st'
-                scores  = map finalScore cards
-                pairs   = zip ps scores
-                ranked = sortOn (Ord.Down . snd) pairs
-            putStrLn "Poredak:"
-            mapM_ (\(i,(pl,sc)) ->
-                    putStrLn $ show i ++ ". " ++ playerName pl ++ " - " ++ show sc)
-                (zip [1..] ranked)
-        else loop st' ps
-        --}
-        -- ====== kraj igre ======
 
-
+-- ====== kraj igre ======
 endGame :: GameState -> [Player] -> IO ()
 endGame st ps = do
     putStrLn "\n=== KRAJ IGRE ==="
