@@ -35,6 +35,6 @@ printHints st =
   case bestHints st 3 of
     [] -> pure ()
     hs -> do
-      putStrLn "Hint (top 3 legal):"
+      putStrLn "Hint (top 3 moves):"
       mapM_ (\(c,col,v) ->
                putStrLn $ "  " ++ show c ++ " / " ++ show col ++ " = " ++ show v) hs

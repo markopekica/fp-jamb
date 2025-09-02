@@ -16,7 +16,7 @@ data Category
   | Max | Min | Straight | Full | Poker | Yamb
   deriving (Eq, Show, Enum, Bounded)
 
-type Round = Int -- šta će mi ovo?
+type Round = Int
 
 -- bodovi jednog igrača: polje može biti prazno ili ima broj
 {- v1
